@@ -10,6 +10,7 @@ import Profile from './components/Profile';
 import AdminPage from './components/AdminPage';
 import XpToast from './components/XpToast';
 import AchievementToast from './components/AchievementToast';
+import ApiKeyPrompt from './components/ApiKeyPrompt';
 
 type Page = 'dashboard' | 'profile' | 'admin';
 
@@ -41,6 +42,8 @@ function App() {
   const [xpToast, setXpToast] = useState<{ amount: number; key: number } | null>(null);
   const [achievementToast, setAchievementToast] = useState<{ achievement: Achievement; key: number } | null>(null);
   const mainContentRef = useRef<HTMLElement>(null);
+
+  const t = useCallback((key: string) => TRANSLATIONS[key]?.[language] || key, [language]);
 
   const showAchievementToast = useCallback((achievement: Achievement) => {
       setAchievementToast({ achievement, key: Date.now() });
@@ -137,7 +140,6 @@ function App() {
 
   const toggleTheme = () => setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
   const toggleLanguage = () => setLanguage(prev => (prev === 'en' ? 'zh' : 'en'));
-  const t = useCallback((key: string) => TRANSLATIONS[key]?.[language] || key, [language]);
   
   const loadDataForUser = useCallback((user: User) => {
     const usersFromStorage: User[] = JSON.parse(localStorage.getItem('insight_quest_users') || '[]');
@@ -356,6 +358,9 @@ function App() {
     }
   }, [currentUser]);
 
+  if (!process.env.API_KEY) {
+    return <ApiKeyPrompt t={t} />;
+  }
 
   if (!isLoggedIn || !currentUser) {
     return <Login onLogin={handleLogin} t={t} />;
