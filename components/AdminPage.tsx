@@ -1,32 +1,19 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { User } from '../types';
-import { ChevronLeftIcon, KeyIcon, Trash2Icon } from '../constants';
+import { ChevronLeftIcon } from '../constants';
 
 interface AdminPageProps {
     t: (key: string) => string;
     onNavigate: (page: 'dashboard' | 'profile' | 'admin') => void;
-    onDeleteUser: (accountId: string) => void;
-    onResetPassword: (accountId: string, newPass: string) => void;
-    currentUser: User;
-    users: User[];
 }
 
-const AdminPage: React.FC<AdminPageProps> = ({ t, onNavigate, onDeleteUser, onResetPassword, currentUser, users }) => {
+const AdminPage: React.FC<AdminPageProps> = ({ t, onNavigate }) => {
+    const [users, setUsers] = useState<User[]>([]);
 
-    const handleDelete = (userToDelete: User) => {
-        if (window.confirm(`Are you sure you want to delete user ${userToDelete.name} (${userToDelete.accountId})? This action cannot be undone.`)) {
-            onDeleteUser(userToDelete.accountId);
-        }
-    };
-
-    const handleReset = (userToReset: User) => {
-        const newPassword = window.prompt(`Enter a new password for ${userToReset.name} (${userToReset.accountId}):`);
-        if (newPassword && newPassword.trim().length >= 6) {
-            onResetPassword(userToReset.accountId, newPassword.trim());
-        } else if (newPassword !== null) { // User didn't cancel the prompt
-            alert("Password must be at least 6 characters long.");
-        }
-    };
+    useEffect(() => {
+        const storedUsers = JSON.parse(localStorage.getItem('insight_quest_users') || '[]');
+        setUsers(storedUsers);
+    }, []);
 
     return (
         <div className="container mx-auto p-4 sm:p-6 lg:p-8">
@@ -44,30 +31,18 @@ const AdminPage: React.FC<AdminPageProps> = ({ t, onNavigate, onDeleteUser, onRe
                 <div className="bg-white dark:bg-[#2A2A2A] rounded-lg shadow-sm">
                     <ul className="divide-y divide-gray-200 dark:divide-[#4A4A4A]">
                         {users.map(user => (
-                            <li key={user.accountId} className="p-4 flex items-center">
-                                <div className="flex items-center space-x-4 flex-grow">
+                            <li key={user.accountId} className="p-4 flex items-center justify-between">
+                                <div className="flex items-center space-x-4">
                                     <img src={user.avatar} alt={user.name} className="w-12 h-12 rounded-full" />
                                     <div>
                                         <p className="font-semibold text-[#2C2C2C] dark:text-white">{user.name}</p>
                                         <p className="text-sm text-gray-500 dark:text-gray-400">{user.accountId}</p>
                                     </div>
                                 </div>
-                                <div className="flex items-center space-x-4">
+                                <div>
                                     <span className={`px-3 py-1 text-xs font-semibold rounded-full ${user.is_admin ? 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300' : 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300'}`}>
                                         {user.is_admin ? 'Admin' : 'User'}
                                     </span>
-                                    <div className="flex items-center space-x-2 w-20 justify-end">
-                                        {user.accountId !== currentUser.accountId && !user.is_admin && (
-                                            <>
-                                                <button onClick={() => handleReset(user)} title="Reset Password" className="p-2 rounded-full hover:bg-yellow-100 dark:hover:bg-yellow-900/50 text-yellow-500 transition-colors">
-                                                    <KeyIcon className="w-5 h-5" />
-                                                </button>
-                                                <button onClick={() => handleDelete(user)} title="Delete User" className="p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50 text-red-500 transition-colors">
-                                                    <Trash2Icon className="w-5 h-5" />
-                                                </button>
-                                            </>
-                                        )}
-                                    </div>
                                 </div>
                             </li>
                         ))}

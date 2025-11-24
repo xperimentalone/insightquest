@@ -9,7 +9,6 @@ interface BottomNavProps {
   currentPage: Page;
   onNavigate: (page: Page) => void;
   user: User | null;
-  mainContentRef: React.RefObject<HTMLElement>;
 }
 
 const NavItem: React.FC<{ icon: React.ReactNode; label: string; active?: boolean; onClick: () => void; }> = ({ icon, label, active, onClick }) => (
@@ -19,11 +18,11 @@ const NavItem: React.FC<{ icon: React.ReactNode; label: string; active?: boolean
   </button>
 );
 
-const BottomNav: React.FC<BottomNavProps> = ({ t, currentPage, onNavigate, user, mainContentRef }) => {
+const BottomNav: React.FC<BottomNavProps> = ({ t, currentPage, onNavigate, user }) => {
 
   const handleHomeClick = () => {
     onNavigate('dashboard');
-    mainContentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleFeedClick = () => {

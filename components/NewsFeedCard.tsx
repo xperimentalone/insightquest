@@ -47,8 +47,8 @@ const NewsFeedCard: React.FC<NewsFeedCardProps> = ({ t, onSelectArticle, languag
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
             const prompt = language === 'zh'
-                ? `以繁體中文，使用 Google 搜尋尋找 5 篇來自香港主要、信譽良好的新聞機構（例如：南華早報、英文虎報、香港自由新聞、香港電台）的最新新聞文章，涵蓋不同類別。對於每篇文章，請提供其可公開存取的直接網址。請驗證該網址是否有效並指向正確的文章。然後，*僅根據該特定網址的內容*撰寫一篇 100-150 字的摘要。同時也請提供標題和類別。確保該網址不是付費專區內容。將整個回應格式化為單一 JSON 陣列，其中每個物件都有 "title"、"summary"、"category" 和 "sourceUrl" 的鍵。JSON 陣列前後不要包含任何文字。`
-                : `Using Google Search, find 5 recent news articles from Hong Kong from various categories from major, reputable news outlets like South China Morning Post, The Standard, Hong Kong Free Press, or RTHK News. For each article, provide its direct, publicly accessible URL. Verify that the URL is valid and leads to the correct article. Then, create a 100-150 word summary based *only* on the content found at that specific URL. Also provide the title and category. Ensure the URL is not behind a paywall. Format the entire response as a single JSON array where each object has "title", "summary", "category", and "sourceUrl" keys. Do not include any text before or after the JSON array.`;
+                ? `以繁體中文，使用 Google 搜尋尋找 5 篇來自香港主要、信譽良好的新聞機構，關於不同類別的最新新聞文章。對於每篇文章，請提供其可公開存取的直接網址，然後*僅根據該特定網址的內容*撰寫一篇 100-150 字的摘要。同時也請提供標題和類別。確保該網址不是付費專區內容。將整個回應格式化為單一 JSON 陣列，其中每個物件都有 "title"、"summary"、"category" 和 "sourceUrl" 的鍵。JSON 陣列前後不要包含任何文字。`
+                : `Using Google Search, find 5 recent news articles from Hong Kong from various categories from major, reputable news outlets. For each article, provide its direct, publicly accessible URL, and then create a 100-150 word summary based *only* on the content found at that specific URL. Also provide the title and category. Ensure the URL is not behind a paywall. Format the entire response as a single JSON array where each object has "title", "summary", "category", and "sourceUrl" keys. Do not include any text before or after the JSON array.`;
 
             const response = await ai.models.generateContent({
                 model: "gemini-2.5-flash",

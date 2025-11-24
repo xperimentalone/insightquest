@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Theme, Language, Article, User, LeaderboardUser, DailyProgress, UserStats, Achievement } from './types';
 import { TRANSLATIONS, ALL_ACHIEVEMENTS, TOPICS } from './constants';
 import Header from './components/Header';
@@ -10,7 +10,6 @@ import Profile from './components/Profile';
 import AdminPage from './components/AdminPage';
 import XpToast from './components/XpToast';
 import AchievementToast from './components/AchievementToast';
-import ApiKeyPrompt from './components/ApiKeyPrompt';
 
 type Page = 'dashboard' | 'profile' | 'admin';
 
@@ -34,16 +33,12 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
-  const [allUsers, setAllUsers] = useState<User[]>([]);
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
   const [progressLog, setProgressLog] = useState<DailyProgress[]>([]);
   const [xpToast, setXpToast] = useState<{ amount: number; key: number } | null>(null);
   const [achievementToast, setAchievementToast] = useState<{ achievement: Achievement; key: number } | null>(null);
-  const mainContentRef = useRef<HTMLElement>(null);
-
-  const t = useCallback((key: string) => TRANSLATIONS[key]?.[language] || key, [language]);
 
   const showAchievementToast = useCallback((achievement: Achievement) => {
       setAchievementToast({ achievement, key: Date.now() });
@@ -60,7 +55,6 @@ function App() {
       if (userIndex > -1) {
           users[userIndex] = { ...users[userIndex], ...updatedUser };
           localStorage.setItem('insight_quest_users', JSON.stringify(users));
-          setAllUsers(users);
       }
   }, [currentUser]);
 
@@ -140,11 +134,11 @@ function App() {
 
   const toggleTheme = () => setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
   const toggleLanguage = () => setLanguage(prev => (prev === 'en' ? 'zh' : 'en'));
+  const t = useCallback((key: string) => TRANSLATIONS[key]?.[language] || key, [language]);
   
   const loadDataForUser = useCallback((user: User) => {
-    const usersFromStorage: User[] = JSON.parse(localStorage.getItem('insight_quest_users') || '[]');
-    setAllUsers(usersFromStorage);
-    const currentLeaderboard = usersFromStorage
+    const allUsers: User[] = JSON.parse(localStorage.getItem('insight_quest_users') || '[]');
+    const currentLeaderboard = allUsers
         .map(u => ({ accountId: u.accountId, name: u.name, xp: u.xp, avatar: u.avatar, rank: 0 }))
         .sort((a, b) => b.xp - a.xp)
         .map((u, index) => ({ ...u, rank: index + 1 }));
@@ -198,7 +192,6 @@ function App() {
     setLeaderboard([]);
     setProgressLog([]);
     setUserStats(null);
-    setAllUsers([]);
   };
 
   const updateProgressLog = useCallback((xp: number, time: number) => {
@@ -240,9 +233,9 @@ function App() {
 
       // Re-calculate leaderboard from the source of truth (all users list)
       // which was just updated by handleUserUpdate
-      const users: User[] = JSON.parse(localStorage.getItem('insight_quest_users') || '[]');
+      const allUsers: User[] = JSON.parse(localStorage.getItem('insight_quest_users') || '[]');
       
-      const newLeaderboard = users
+      const newLeaderboard = allUsers
         .map(u => ({ accountId: u.accountId, name: u.name, xp: u.xp, avatar: u.avatar, rank: 0 }))
         .sort((a, b) => b.xp - a.xp)
         .map((u, index) => ({ ...u, rank: index + 1 }));
@@ -307,61 +300,6 @@ function App() {
     setSelectedArticle(null);
   }, []);
 
-  const saveAllUsers = (users: any[]) => {
-      localStorage.setItem('insight_quest_users', JSON.stringify(users));
-  };
-
-  const handleDeleteUser = useCallback((accountIdToDelete: string) => {
-    if (!currentUser || !currentUser.is_admin) return;
-    
-    const usersFromStorage: User[] = JSON.parse(localStorage.getItem('insight_quest_users') || '[]');
-    const userToDelete = usersFromStorage.find(u => u.accountId === accountIdToDelete);
-    
-    if (userToDelete?.is_admin) {
-        alert("Cannot delete an admin account.");
-        return;
-    }
-
-    const updatedUsers = usersFromStorage.filter(u => u.accountId !== accountIdToDelete);
-    saveAllUsers(updatedUsers);
-    setAllUsers(updatedUsers);
-
-    localStorage.removeItem(`insight_quest_stats_${accountIdToDelete}`);
-    localStorage.removeItem(`insight_quest_progress_${accountIdToDelete}`);
-    localStorage.removeItem(`insight_quest_last_checkin_${accountIdToDelete}`);
-
-    const newLeaderboard = updatedUsers
-        .map(u => ({ accountId: u.accountId, name: u.name, xp: u.xp, avatar: u.avatar, rank: 0 }))
-        .sort((a, b) => b.xp - a.xp)
-        .map((u, index) => ({ ...u, rank: index + 1 }));
-    setLeaderboard(newLeaderboard);
-  }, [currentUser]);
-
-  const handleResetPassword = useCallback((accountIdToReset: string, newPassword: string) => {
-    if (!currentUser || !currentUser.is_admin) return;
-
-    const usersFromStorage: any[] = JSON.parse(localStorage.getItem('insight_quest_users') || '[]');
-    const userIndex = usersFromStorage.findIndex(u => u.accountId === accountIdToReset);
-
-    if (userIndex > -1) {
-        if (usersFromStorage[userIndex].is_admin) {
-            alert("Admin passwords cannot be reset from this panel.");
-            return;
-        }
-        
-        const updatedUsers = [...usersFromStorage];
-        updatedUsers[userIndex].password = newPassword;
-
-        saveAllUsers(updatedUsers);
-        setAllUsers(updatedUsers);
-        alert(`Password for ${updatedUsers[userIndex].name} has been reset.`);
-    }
-  }, [currentUser]);
-
-  if (!process.env.API_KEY) {
-    return <ApiKeyPrompt t={t} />;
-  }
-
   if (!isLoggedIn || !currentUser) {
     return <Login onLogin={handleLogin} t={t} />;
   }
@@ -373,7 +311,7 @@ function App() {
         case 'profile':
             return <Profile t={t} user={currentUser} onUserUpdate={handleUserUpdate} onLogout={handleLogout} onNavigate={setCurrentPage} />;
         case 'admin':
-            return currentUser.is_admin ? <AdminPage t={t} onNavigate={setCurrentPage} users={allUsers} onDeleteUser={handleDeleteUser} onResetPassword={handleResetPassword} currentUser={currentUser} /> : <Dashboard t={t} theme={theme} onSelectArticle={handleSelectArticle} leaderboard={leaderboard} onXpEarned={handleXpEarned} progressLog={progressLog} language={language} user={currentUser} />;
+            return currentUser.is_admin ? <AdminPage t={t} onNavigate={setCurrentPage} /> : <Dashboard t={t} theme={theme} onSelectArticle={handleSelectArticle} leaderboard={leaderboard} onXpEarned={handleXpEarned} progressLog={progressLog} language={language} user={currentUser} />;
         default:
             return <Dashboard t={t} theme={theme} onSelectArticle={handleSelectArticle} leaderboard={leaderboard} onXpEarned={handleXpEarned} progressLog={progressLog} language={language} user={currentUser} />;
     }
@@ -383,8 +321,8 @@ function App() {
     <div className={`min-h-screen font-sans bg-gray-50 dark:bg-[#1A1A1A] text-[#2C2C2C] dark:text-white transition-colors duration-300`}>
       <div className="flex flex-col h-screen">
         <Header t={t} theme={theme} toggleTheme={toggleTheme} language={language} toggleLanguage={toggleLanguage} user={currentUser} onNavigate={setCurrentPage} onLogout={handleLogout} />
-        <main ref={mainContentRef} className="flex-grow overflow-y-auto pb-24 lg:pb-8">{renderPage()}</main>
-        <BottomNav t={t} currentPage={currentPage} onNavigate={setCurrentPage} user={currentUser} mainContentRef={mainContentRef} />
+        <main className="flex-grow overflow-y-auto pb-24 lg:pb-8">{renderPage()}</main>
+        <BottomNav t={t} currentPage={currentPage} onNavigate={setCurrentPage} user={currentUser} />
       </div>
       {selectedArticle && (
         <ArticleReader 
